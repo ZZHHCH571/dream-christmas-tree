@@ -23,7 +23,7 @@ window.XMAS_CONFIG = {
   THEME: "rose",
   GIFT_MODE: false,
   CARDS: [
-    "致 亲爱的小美",
+    "致 亲爱的{NAME}",
     "Merry Christmas",
     "永远被爱与星光包围",
     "平安喜乐 万事顺遂",
@@ -1414,8 +1414,9 @@ window.XMAS_CONFIG = {
         var heightRatio = 0.28 + (cIdx % 3) * 0.23;
         var radius = Math.pow(1 - heightRatio, 0.78) * TREE_RADIUS + 2.05;
         var photoUrl = (cfg.PHOTOS && cfg.PHOTOS[cIdx]) || '';
+        var resolvedCaption = String(list[cIdx] || 'Merry Christmas').replace(/\{NAME\}/g, cfg.NAME || '你');
 
-        var tex = createPolaroidTexture(list[cIdx], cIdx, theme, photoUrl);
+        var tex = createPolaroidTexture(resolvedCaption, cIdx, theme, photoUrl);
         var mat = new THREE.MeshBasicMaterial({
           map: tex,
           side: THREE.DoubleSide,
@@ -1423,7 +1424,7 @@ window.XMAS_CONFIG = {
           opacity: 0.98
         });
         var mesh = new THREE.Mesh(cardGeo, mat);
-        mesh.userData = { cardIndex: cIdx, caption: list[cIdx], photoUrl: photoUrl };
+        mesh.userData = { cardIndex: cIdx, caption: resolvedCaption, photoUrl: photoUrl };
 
         var treePos = new THREE.Vector3(
           Math.cos(angle) * radius,
