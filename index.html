@@ -1,0 +1,2055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070510">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>梦幻星河圣诞树 · 专属惊喜</title>
+
+<!-- =========================================================================
+     ★★★ 专属定制配置区（拖进豆包「工作」模式改名字/配色/祝福语只需改这里）★★★
+     - NAME      : 收礼人名字（开屏、树下大字自动同步）
+     - BLESSING  : 底部简短温柔祝福语
+     - THEME     : 默认梦幻配色 -> 'rose' (梦幻玫瑰粉金) | 'emerald' (高定祖母绿暖金) | 'aurora' (冰雪极光蓝紫)
+     - GIFT_MODE : true = 纯礼物模式（隐藏所有编辑/传图按钮，对方仅可换主题与开关音乐）；导出专属版时会自动设为 true
+     - CARDS     : 6 张环绕 3D 拍立得卡片上的短文案（建议每张 4~10 字最美观）
+     - PHOTOS    : 6 张拍立得照片（支持页面内直接上传自动压缩并导出内嵌，留空则显示梦幻星河插画）
+     ========================================================================= -->
+<script id="christmas-config">
+window.XMAS_CONFIG = {
+  NAME: "小美",
+  BLESSING: "愿你岁岁常欢愉，万事皆胜意",
+  THEME: "rose",
+  GIFT_MODE: false,
+  CARDS: [
+    "致 亲爱的小美",
+    "Merry Christmas",
+    "永远被爱与星光包围",
+    "平安喜乐 万事顺遂",
+    "冬天快乐 浪漫常在",
+    "把整个星河送给你"
+  ],
+  PHOTOS: []
+};
+</script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #070510;
+    color: #fff;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #canvas-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    transition: background 1.2s ease;
+  }
+
+  /* 梦幻柔暗角，聚焦视觉中心 */
+  #vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(ellipse 72% 68% at 50% 48%, rgba(0,0,0,0) 38%, rgba(4,3,12,0.58) 100%);
+  }
+
+  /* ================= 极简高定开屏层 ================= */
+  #intro {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: radial-gradient(circle at 50% 45%, rgba(25, 14, 38, 0.35), rgba(6, 4, 14, 0.72));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.9s;
+  }
+  #intro.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .intro-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: clamp(28px, 5vw, 44px) clamp(26px, 6vw, 52px);
+    border-radius: 28px;
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 232, 240, 0.22);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    max-width: min(90vw, 400px);
+  }
+
+  .intro-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+    color: rgba(255, 224, 232, 0.72);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .intro-star {
+    font-size: 28px;
+    margin-bottom: 10px;
+    color: #ffe3b8;
+    text-shadow: 0 0 20px rgba(255, 192, 203, 0.85);
+    animation: gentleFloat 3.4s ease-in-out infinite;
+  }
+
+  .intro-title {
+    font-size: clamp(24px, 6.2vw, 34px);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #fff7fa;
+    text-shadow: 0 2px 18px rgba(255, 182, 206, 0.45);
+    margin-bottom: 10px;
+  }
+
+  .intro-desc {
+    font-size: 13px;
+    color: rgba(255, 235, 242, 0.72);
+    line-height: 1.7;
+    margin-bottom: 26px;
+  }
+
+  .unwrap-btn {
+    appearance: none;
+    border: 1px solid rgba(255, 228, 235, 0.45);
+    background: linear-gradient(135deg, rgba(255, 182, 206, 0.32), rgba(255, 215, 168, 0.22));
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    padding: 13px 32px;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 0 28px rgba(255, 165, 198, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  }
+  .unwrap-btn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, rgba(255, 182, 206, 0.45), rgba(255, 215, 168, 0.32));
+    box-shadow: 0 0 38px rgba(255, 175, 205, 0.55);
+  }
+  .unwrap-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* ================= 顶部极简隐身控制条（低存在感不抢画面） ================= */
+  #topbar {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top));
+    right: calc(14px + env(safe-area-inset-right));
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: opacity 0.45s ease, transform 0.6s ease;
+  }
+  #topbar.show {
+    opacity: 0.48;
+    transform: none;
+    pointer-events: auto;
+  }
+  #topbar.show:hover,
+  #topbar.show:active {
+    opacity: 0.96;
+  }
+
+  .glass-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(12, 10, 22, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .theme-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.32);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .theme-dot.active {
+    transform: scale(1.22);
+    border-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.65);
+  }
+
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(12, 10, 22, 0.28);
+    color: rgba(255, 245, 248, 0.86);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .icon-btn:active {
+    transform: scale(0.92);
+  }
+  .icon-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .creator-only {
+    display: inline-flex;
+  }
+  body.gift-mode .creator-only {
+    display: none !important;
+  }
+
+  /* ================= 底部克制高级文字 & 星河魔法切换 ================= */
+  #hud-bottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 20px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.9s ease 0.35s, transform 0.9s ease 0.35s;
+  }
+  #hud-bottom.show {
+    opacity: 1;
+    transform: none;
+  }
+
+  .title-line {
+    font-size: clamp(20px, 5.2vw, 30px);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    color: #fff8f2;
+    text-shadow: 0 2px 14px rgba(255, 195, 215, 0.42);
+  }
+
+  .blessing-line {
+    margin-top: 6px;
+    font-size: clamp(12px, 3.2vw, 15px);
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    color: rgba(255, 238, 244, 0.78);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  }
+
+  .magic-actions {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .magic-btn {
+    appearance: none;
+    border: 1px solid rgba(255, 236, 242, 0.28);
+    background: rgba(20, 14, 34, 0.44);
+    color: rgba(255, 246, 248, 0.94);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    padding: 8px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.25s ease;
+  }
+  .magic-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.45);
+  }
+  .magic-btn:active {
+    transform: scale(0.95);
+  }
+
+  #gesture-tip {
+    position: fixed;
+    top: calc(18px + env(safe-area-inset-top));
+    left: 16px;
+    z-index: 12;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: rgba(255, 238, 245, 0.56);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  #gesture-tip.show {
+    opacity: 1;
+  }
+
+  /* ================= 网页内快捷改名与导出专属 HTML 弹窗 ================= */
+  #editor-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(5, 3, 12, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  #editor-modal.open {
+    display: flex;
+  }
+
+  .editor-panel {
+    width: 100%;
+    max-width: 430px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 20px;
+    padding: 22px;
+    background: rgba(22, 17, 36, 0.95);
+    border: 1px solid rgba(255, 228, 238, 0.2);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .photo-slot {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    border: 1px dashed rgba(255, 228, 238, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 232, 242, 0.65);
+    font-size: 11px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .photo-slot:hover {
+    border-color: rgba(255, 186, 210, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .photo-slot .remove-photo {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.68);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .photo-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .photo-mini-btn {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 200, 220, 0.35);
+    background: rgba(255, 182, 206, 0.16);
+    color: #ffe6f0;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .photo-mini-btn:hover {
+    background: rgba(255, 182, 206, 0.28);
+  }
+
+  /* ================= 点击 3D 拍立得放大查看灯箱 ================= */
+  #photo-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(5, 3, 12, 0.76);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    cursor: pointer;
+  }
+  #photo-lightbox.open {
+    display: flex;
+  }
+  .lightbox-polaroid {
+    width: min(84vw, 340px);
+    background: #fffaf6;
+    border-radius: 16px;
+    padding: 16px 16px 26px;
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.65);
+    text-align: center;
+    cursor: default;
+    transform: rotate(-1.2deg);
+  }
+  .lightbox-img-box {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #241033;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lightbox-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .lightbox-caption {
+    margin-top: 16px;
+    color: #2d1b2e;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .lightbox-sub {
+    margin-top: 6px;
+    color: #9f7f98;
+    font-size: 12px;
+  }
+  .editor-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .editor-head h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .editor-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .field {
+    margin-bottom: 12px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: rgba(255, 232, 240, 0.72);
+    margin-bottom: 5px;
+  }
+  .field input,
+  .field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    border-color: rgba(255, 186, 210, 0.65);
+  }
+  .editor-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .btn-primary,
+  .btn-secondary {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #f472b6, #e8a87c);
+    color: #160c1f;
+  }
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  /* 加载状态 / 容灾提示 */
+  #loader {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #070510;
+    color: rgba(255, 230, 240, 0.8);
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    transition: opacity 0.5s ease;
+  }
+  #loader.done {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @keyframes gentleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+</style>
+</head>
+
+<body>
+  <div id="loader">✦ 正在点亮梦幻星河...</div>
+  <div id="canvas-wrap"></div>
+  <div id="vignette"></div>
+
+  <!-- 极简高定开屏 -->
+  <div id="intro">
+    <div class="intro-card">
+      <div class="intro-eyebrow">A Celestial Christmas Gift</div>
+      <div class="intro-star">✦</div>
+      <div class="intro-title" id="introName">致 小美</div>
+      <div class="intro-desc">为你准备了一棵会发光、会唱歌的<br>3D 梦幻星河圣诞树</div>
+      <button class="unwrap-btn" id="unwrapBtn" type="button">✦ 点击点亮圣诞星河</button>
+    </div>
+  </div>
+
+  <!-- 左上角轻提示 -->
+  <div id="gesture-tip">滑动旋转 · 点击拍立得查看大图 · 双击切换星河</div>
+
+  <!-- 右上角极简控制条：对方仅可见换主题与声音；定制按钮在导出专属礼盒后自动隐藏 -->
+  <div id="topbar">
+    <div class="glass-pill" title="切换梦幻主题色">
+      <button class="theme-dot" data-theme="rose" style="background: linear-gradient(135deg,#ff9ec7,#ffdcb8)" aria-label="梦幻玫瑰粉金"></button>
+      <button class="theme-dot" data-theme="emerald" style="background: linear-gradient(135deg,#10b981,#facc15)" aria-label="高定祖母绿暖金"></button>
+      <button class="theme-dot" data-theme="aurora" style="background: linear-gradient(135deg,#7dd3fc,#c084fc)" aria-label="冰雪极光蓝紫"></button>
+    </div>
+
+    <button class="icon-btn" id="muteBtn" type="button" title="开关八音盒音乐" aria-label="开关音乐">
+      <svg id="icoSoundOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      </svg>
+      <svg id="icoSoundOff" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+        <line x1="23" y1="9" x2="17" y2="15"/>
+        <line x1="17" y1="9" x2="23" y2="15"/>
+      </svg>
+    </button>
+
+    <button class="icon-btn creator-only" id="editBtn" type="button" title="定制名字、上传照片并导出纯净礼盒版（导出后此按钮自动隐藏）" aria-label="定制礼盒">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z"/>
+      </svg>
+    </button>
+    <input id="photoMultiInput" type="file" accept="image/*" multiple style="display:none">
+    <input id="photoSingleInput" type="file" accept="image/*" style="display:none">
+  </div>
+
+  <!-- 底部克制文字与魔法散开按钮 -->
+  <div id="hud-bottom">
+    <div class="title-line" id="bottomTitle">小美 · Merry Christmas</div>
+    <div class="blessing-line" id="bottomBlessing">愿你岁岁常欢愉，万事皆胜意</div>
+    <div class="magic-actions">
+      <button class="magic-btn" id="morphBtn" type="button">✦ 散成星河</button>
+    </div>
+  </div>
+
+  <!-- 自定义改名与导出专属 HTML 弹窗 -->
+  <div id="editor-modal">
+    <div class="editor-panel">
+      <div class="editor-head">
+        <h3>自定义专属名字与祝福</h3>
+        <button class="editor-close" id="closeEditor" type="button">&times;</button>
+      </div>
+      <div class="field">
+        <label>收礼人名字</label>
+        <input id="inputName" type="text" maxlength="16" placeholder="例如：小美">
+      </div>
+      <div class="field">
+        <label>底部祝福短句</label>
+        <input id="inputBlessing" type="text" maxlength="36" placeholder="愿你岁岁常欢愉，万事皆胜意">
+      </div>
+      <div class="field">
+        <div class="photo-bar">
+          <label style="margin:0">拍立得照片（最多 6 张，自动压缩并打包导出）</label>
+          <button class="photo-mini-btn" id="modalUploadAllBtn" type="button">+ 批量选图</button>
+        </div>
+        <div class="photo-grid" id="photoGrid"></div>
+      </div>
+      <div class="field">
+        <label>6 张拍立得悬浮卡片文案（每行一条）</label>
+        <textarea id="inputCards" rows="6"></textarea>
+      </div>
+      <div class="editor-btns">
+        <button class="btn-secondary" id="applyBtn" type="button">立即预览</button>
+        <button class="btn-primary" id="exportBtn" type="button">导出专属 HTML</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 点击 3D 拍立得放大查看灯箱 -->
+  <div id="photo-lightbox">
+    <div class="lightbox-polaroid" id="lightboxCard">
+      <div class="lightbox-img-box" id="lightboxImgBox"></div>
+      <div class="lightbox-caption" id="lightboxCaption"></div>
+      <div class="lightbox-sub">轻触空白处返回圣诞星河</div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==================== 1. 多源容灾加载 Three.js（传统 UMD 全局脚本，确保本地 file:// 零跨域报错） ==================== */
+  var THREE_CDNS = [
+    'https://cdn.staticfile.net/three.js/r128/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+    'https://unpkg.com/three@0.128.0/build/three.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+  ];
+
+  function loadThree(idx, onReady) {
+    if (window.THREE) { onReady(); return; }
+    if (idx >= THREE_CDNS.length) {
+      document.getElementById('loader').textContent = '3D 引擎加载受网络限制，请连接网络后刷新重试';
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = THREE_CDNS[idx];
+    s.async = true;
+    var done = false;
+    var timer = setTimeout(function () {
+      if (!done && !window.THREE) { done = true; loadThree(idx + 1, onReady); }
+    }, 4500);
+    s.onload = function () {
+      if (!done && window.THREE) { done = true; clearTimeout(timer); onReady(); }
+    };
+    s.onerror = function () {
+      if (!done) { done = true; clearTimeout(timer); loadThree(idx + 1, onReady); }
+    };
+    document.head.appendChild(s);
+  }
+
+  /* ==================== 2. 三套高定梦幻配色方案 ==================== */
+  var THEMES = {
+    rose: {
+      name: '梦幻玫瑰粉金',
+      bgCss: 'radial-gradient(ellipse at 50% 32%, #241033 0%, #11081e 50%, #05030b 100%)',
+      fogColor: 0x0d0719,
+      treeInner: [0xd9468f, 0x9d2b6b, 0xc05299],
+      treeMid:   [0xff85b8, 0xffa6c9, 0xf7b28b],
+      treeTip:   [0xffe6f0, 0xffe4b8, 0xffffff],
+      ribbon:    [0xffd6a5, 0xffa8cc, 0xfff5e4],
+      ornaments: [0xffd166, 0xff6b9d, 0xfff1e6, 0xe8a87c, 0xf9a8d4],
+      starColor: 0xffe7b3,
+      light1:    0xffa8cc,
+      light2:    0xffd79a,
+      cardTop:   '#2a1238',
+      cardMid:   '#592252',
+      cardAccent:'#ffb3d1'
+    },
+    emerald: {
+      name: '高定祖母绿暖金',
+      bgCss: 'radial-gradient(ellipse at 50% 32%, #0c2620 0%, #061412 52%, #020808 100%)',
+      fogColor: 0x05110e,
+      treeInner: [0x065f46, 0x047857, 0x0f5132],
+      treeMid:   [0x10b981, 0x34d399, 0x2dd4bf],
+      treeTip:   [0xfde68a, 0xffd166, 0xfffbeb],
+      ribbon:    [0xffd166, 0xfef3c7, 0xfbbf24],
+      ornaments: [0xef4444, 0xfbbf24, 0xfff7ed, 0xf59e0b, 0xdc2626],
+      starColor: 0xffe082,
+      light1:    0xffd166,
+      light2:    0x6ee7b7,
+      cardTop:   '#0a2720',
+      cardMid:   '#174a3c',
+      cardAccent:'#fcd34d'
+    },
+    aurora: {
+      name: '冰雪极光蓝紫',
+      bgCss: 'radial-gradient(ellipse at 50% 32%, #0f1f42 0%, #081026 52%, #030612 100%)',
+      fogColor: 0x070e21,
+      treeInner: [0x1d4ed8, 0x3b82f6, 0x4338ca],
+      treeMid:   [0x38bdf8, 0x818cf8, 0xc084fc],
+      treeTip:   [0xe0f2fe, 0xf3e8ff, 0xffffff],
+      ribbon:    [0xbae6fd, 0xd8b4fe, 0xffffff],
+      ornaments: [0x7dd3fc, 0xe0e7ff, 0xc084fc, 0xffffff, 0x60a5fa],
+      starColor: 0xe0f2fe,
+      light1:    0x7dd3fc,
+      light2:    0xc084fc,
+      cardTop:   '#0e1e42',
+      cardMid:   '#2a225c',
+      cardAccent:'#93c5fd'
+    }
+  };
+
+  /* ==================== 3. 水晶八音盒（正确节拍《Jingle Bells》+ 柔和和声） ==================== */
+  var audioCtx = null, masterGain = null, musicBus = null, musicTimer = null;
+  var isMuted = false, stepIndex = 0, nextNoteTime = 0;
+  var BEAT = 0.36;
+
+  var NOTE_FREQ = {
+    C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+    C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, B5: 987.77,
+    C6: 1046.50, D6: 1174.66, E6: 1318.51
+  };
+
+  // [主旋律, 拍数, 柔和低音伴奏(可选)] — 严格按标准《Jingle Bells》节拍编排
+  var SONG = [
+    ['E5', 1, 'C4'], ['E5', 1], ['E5', 2, 'G4'],
+    ['E5', 1, 'C4'], ['E5', 1], ['E5', 2, 'G4'],
+    ['E5', 1, 'C4'], ['G5', 1], ['C5', 1.5, 'E4'], ['D5', 0.5], ['E5', 4, 'C4'],
+
+    ['F5', 1, 'F4'], ['F5', 1], ['F5', 1.5, 'A4'], ['F5', 0.5],
+    ['F5', 1, 'C4'], ['E5', 1], ['E5', 1, 'G4'], ['E5', 0.5], ['E5', 0.5],
+    ['E5', 1, 'D4'], ['D5', 1], ['D5', 1, 'G4'], ['E5', 1], ['D5', 2, 'G4'], ['G5', 2, 'B4'],
+
+    ['E5', 1, 'C4'], ['E5', 1], ['E5', 2, 'G4'],
+    ['E5', 1, 'C4'], ['E5', 1], ['E5', 2, 'G4'],
+    ['E5', 1, 'C4'], ['G5', 1], ['C5', 1.5, 'E4'], ['D5', 0.5], ['E5', 4, 'C4'],
+
+    ['F5', 1, 'F4'], ['F5', 1], ['F5', 1.5, 'A4'], ['F5', 0.5],
+    ['F5', 1, 'C4'], ['E5', 1], ['E5', 1, 'G4'], ['E5', 0.5], ['E5', 0.5],
+    ['G5', 1, 'G4'], ['G5', 1], ['F5', 1, 'B4'], ['D5', 1], ['C5', 4, 'C4']
+  ];
+
+  function initAudio() {
+    if (audioCtx) {
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(function () {});
+      return;
+    }
+    var Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return;
+    try {
+      audioCtx = new Ctor();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.82;
+      masterGain.connect(audioCtx.destination);
+
+      musicBus = audioCtx.createGain();
+      musicBus.gain.value = 0.58;
+      musicBus.connect(masterGain);
+
+      // 立体声柔和延音，营造梦幻水晶八音盒空间感
+      var delay = audioCtx.createDelay(0.6);
+      delay.delayTime.value = 0.16;
+      var fb = audioCtx.createGain();
+      fb.gain.value = 0.28;
+      var wet = audioCtx.createGain();
+      wet.gain.value = 0.34;
+      musicBus.connect(delay);
+      delay.connect(fb);
+      fb.connect(delay);
+      delay.connect(wet);
+      wet.connect(masterGain);
+    } catch (e) {
+      audioCtx = null;
+    }
+  }
+
+  function playBell(freq, startTime, duration, volume) {
+    if (!audioCtx || !freq) return;
+    var g = audioCtx.createGain();
+    g.connect(musicBus);
+    var decay = Math.max(0.45, duration * 1.45);
+    g.gain.setValueAtTime(0.0001, startTime);
+    g.gain.exponentialRampToValueAtTime(0.24 * volume, startTime + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, startTime + decay);
+
+    var o1 = audioCtx.createOscillator();
+    o1.type = 'sine';
+    o1.frequency.value = freq;
+
+    var o2 = audioCtx.createOscillator();
+    o2.type = 'triangle';
+    o2.frequency.value = freq * 2;
+    var g2 = audioCtx.createGain();
+    g2.gain.value = 0.22;
+
+    var o3 = audioCtx.createOscillator();
+    o3.type = 'sine';
+    o3.frequency.value = freq * 3;
+    var g3 = audioCtx.createGain();
+    g3.gain.value = 0.06;
+
+    o1.connect(g);
+    o2.connect(g2); g2.connect(g);
+    o3.connect(g3); g3.connect(g);
+
+    var stopAt = startTime + decay + 0.08;
+    o1.start(startTime); o1.stop(stopAt);
+    o2.start(startTime); o2.stop(stopAt);
+    o3.start(startTime); o3.stop(stopAt);
+  }
+
+  function scheduleMusic() {
+    if (!audioCtx) return;
+    if (nextNoteTime < audioCtx.currentTime - 0.5) {
+      nextNoteTime = audioCtx.currentTime + 0.12;
+    }
+    while (nextNoteTime < audioCtx.currentTime + 0.85) {
+      var step = SONG[stepIndex];
+      var dur = step[1] * BEAT;
+      playBell(NOTE_FREQ[step[0]], nextNoteTime, dur, 0.92);
+      if (step[2]) {
+        playBell(NOTE_FREQ[step[2]], nextNoteTime, dur * 1.4, 0.34);
+      }
+      nextNoteTime += dur;
+      stepIndex++;
+      if (stepIndex >= SONG.length) {
+        stepIndex = 0;
+        nextNoteTime += 0.65;
+      }
+    }
+  }
+
+  function startMusic() {
+    initAudio();
+    if (!audioCtx || musicTimer) return;
+    stepIndex = 0;
+    nextNoteTime = audioCtx.currentTime + 0.25;
+    scheduleMusic();
+    musicTimer = setInterval(scheduleMusic, 220);
+  }
+
+  function playMagicChime() {
+    if (!audioCtx || isMuted) return;
+    var now = audioCtx.currentTime + 0.01;
+    var arp = ['C5', 'E5', 'G5', 'B5', 'C6', 'E6'];
+    for (var i = 0; i < arp.length; i++) {
+      playBell(NOTE_FREQ[arp[i]], now + i * 0.055, 0.55, 0.52);
+    }
+  }
+
+  /* ==================== 4. 启动 3D 梦幻场景 ==================== */
+  function startApp() {
+    var THREE = window.THREE;
+    var cfg = window.XMAS_CONFIG;
+    var activeThemeKey = THEMES[cfg.THEME] ? cfg.THEME : 'rose';
+
+    var wrap = document.getElementById('canvas-wrap');
+    var loaderEl = document.getElementById('loader');
+    var introEl = document.getElementById('intro');
+    var topbarEl = document.getElementById('topbar');
+    var hudBottomEl = document.getElementById('hud-bottom');
+    var tipEl = document.getElementById('gesture-tip');
+    var morphBtn = document.getElementById('morphBtn');
+
+    var W = window.innerWidth;
+    var H = window.innerHeight;
+
+    var scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(THEMES[activeThemeKey].fogColor, 0.022);
+
+    var camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 160);
+    var baseCamDist = W < 640 ? 25.0 : 20.6;
+    var targetCamDist = baseCamDist;
+    var camDist = baseCamDist;
+    camera.position.set(0, 1.2, camDist);
+
+    var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(W, H);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+    wrap.appendChild(renderer.domElement);
+
+    // 灯光系统：给 3D 立体金属彩球和八面体提供高级光泽反射
+    var ambLight = new THREE.AmbientLight(0xffffff, 0.72);
+    scene.add(ambLight);
+
+    var keyLight = new THREE.PointLight(THEMES[activeThemeKey].light1, 2.8, 45);
+    keyLight.position.set(6, 9, 10);
+    scene.add(keyLight);
+
+    var rimLight = new THREE.PointLight(THEMES[activeThemeKey].light2, 2.4, 45);
+    rimLight.position.set(-8, 4, -6);
+    scene.add(rimLight);
+
+    var starPointLight = new THREE.PointLight(THEMES[activeThemeKey].starColor, 2.2, 22);
+    starPointLight.position.set(0, 6.2, 0);
+    scene.add(starPointLight);
+
+    // 场景主旋转组（上移黄金构图位，给底部文字与按钮留出干净呼吸空间）
+    var worldGroup = new THREE.Group();
+    worldGroup.position.y = 1.25;
+    scene.add(worldGroup);
+
+    var TREE_HEIGHT = 10.2;
+    var TREE_RADIUS = 4.15;
+    var TREE_BOTTOM = -4.6;
+
+    /* ---------- 4.1 主树粒子（等面积采样避免树顶过曝 + 清晰 7 层垂坠松枝） ---------- */
+    var PARTICLE_COUNT = W < 640 ? 6000 : 8200;
+    var treeGeo = new THREE.BufferGeometry();
+    var posTree = new Float32Array(PARTICLE_COUNT * 3);
+    var posScatter = new Float32Array(PARTICLE_COUNT * 3);
+    var pColors = new Float32Array(PARTICLE_COUNT * 3);
+    var pSizes = new Float32Array(PARTICLE_COUNT);
+    var pPhases = new Float32Array(PARTICLE_COUNT);
+    var pRoles = new Uint8Array(PARTICLE_COUNT); // 0=内层 1=中层 2=枝尖高光 3=螺旋星带
+
+    var RIBBON_START = Math.floor(PARTICLE_COUNT * 0.84);
+
+    for (var i = 0; i < PARTICLE_COUNT; i++) {
+      var i3 = i * 3;
+      var x, y, z, role;
+
+      if (i < RIBBON_START) {
+        // 锥面等面积分布：u = 1 - sqrt(rand)，确保从底到顶密度均匀、树尖绝不糊成白块
+        var u = 1.0 - Math.sqrt(Math.random());
+        var tiers = 7.0;
+        var tierIdx = Math.floor(u * tiers);
+        var tierFrac = (u * tiers) - tierIdx; // 每层内 0=层底裙摆 -> 1=层顶收口
+        var tierSkirt = 1.0 - Math.pow(tierFrac, 0.85) * 0.56;
+        var envR = Math.pow(1.0 - u, 0.90) * TREE_RADIUS;
+        var ang = Math.random() * Math.PI * 2;
+        var branchPetals = 1.0 + 0.17 * Math.sin(ang * 7.0 + tierIdx * 1.45) * (1.0 - u * 0.3);
+
+        // 78% 分布在外围丰盈分层轮廓，22% 填充内部层次
+        var radialFill = Math.random() < 0.78
+          ? (0.78 + Math.random() * 0.25)
+          : (0.28 + Math.random() * 0.5);
+
+        var r = envR * (0.48 + 0.62 * tierSkirt) * branchPetals * radialFill;
+        var droop = -0.32 * (1.0 - u) * radialFill * (1.0 - tierFrac);
+
+        x = Math.cos(ang) * r;
+        z = Math.sin(ang) * r;
+        y = TREE_BOTTOM + u * TREE_HEIGHT + droop;
+
+        // 顶部粒子略微缩小，保证树尖精致通透
+        var topScale = 0.64 + 0.36 * (1.0 - u);
+
+        if (radialFill > 0.93 && Math.random() < 0.42) {
+          role = 2; // 枝尖星光高光
+          pSizes[i] = (11 + Math.random() * 11) * topScale;
+        } else if (radialFill > 0.72) {
+          role = 1; // 丰盈外层主色
+          pSizes[i] = (8.5 + Math.random() * 8.5) * topScale;
+        } else {
+          role = 0; // 内层深邃托底
+          pSizes[i] = (9 + Math.random() * 7) * topScale;
+        }
+      } else {
+        // 两条纤细优雅的螺旋星光流带（按面积密度分布，顶部不堆积）
+        var tRib = 1.0 - Math.sqrt(Math.random());
+        var strand = i % 2;
+        var turns = 5.2;
+        var ribAngle = tRib * turns * Math.PI * 2 + strand * Math.PI + (Math.random() - 0.5) * 0.12;
+        var ribR = Math.pow(1.0 - tRib, 0.88) * (TREE_RADIUS * 1.07) + (Math.random() - 0.5) * 0.12;
+        x = Math.cos(ribAngle) * ribR;
+        z = Math.sin(ribAngle) * ribR;
+        y = TREE_BOTTOM + tRib * TREE_HEIGHT + (Math.random() - 0.5) * 0.1;
+        role = 3;
+        pSizes[i] = (9.5 + Math.random() * 9) * (0.65 + 0.35 * (1.0 - tRib));
+      }
+
+      posTree[i3] = x;
+      posTree[i3 + 1] = y;
+      posTree[i3 + 2] = z;
+      pRoles[i] = role;
+      pPhases[i] = Math.random() * Math.PI * 2;
+
+      // 散成星河时的球形星云目标位置
+      var sPhi = Math.acos(2 * Math.random() - 1);
+      var sTheta = Math.random() * Math.PI * 2;
+      var sRad = 6.5 + Math.pow(Math.random(), 0.6) * 11.5;
+      posScatter[i3] = sRad * Math.sin(sPhi) * Math.cos(sTheta);
+      posScatter[i3 + 1] = sRad * Math.cos(sPhi) * 0.68;
+      posScatter[i3 + 2] = sRad * Math.sin(sPhi) * Math.sin(sTheta);
+    }
+
+    treeGeo.setAttribute('position', new THREE.BufferAttribute(posTree, 3));
+    treeGeo.setAttribute('aScatter', new THREE.BufferAttribute(posScatter, 3));
+    treeGeo.setAttribute('aColor', new THREE.BufferAttribute(pColors, 3));
+    treeGeo.setAttribute('aSize', new THREE.BufferAttribute(pSizes, 1));
+    treeGeo.setAttribute('aPhase', new THREE.BufferAttribute(pPhases, 1));
+
+    var treeMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uMorph: { value: 1.0 }, // 1.0 = 开屏梦幻星河，0.0 = 聚合成圣诞树
+        uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) }
+      },
+      vertexShader: [
+        'attribute vec3 aScatter;',
+        'attribute vec3 aColor;',
+        'attribute float aSize;',
+        'attribute float aPhase;',
+        'uniform float uTime;',
+        'uniform float uMorph;',
+        'uniform float uPixelRatio;',
+        'varying vec3 vColor;',
+        'varying float vTwinkle;',
+        'void main() {',
+        '  vColor = aColor;',
+        '  // 螺旋优雅聚散轨迹',
+        '  float swirl = uMorph * (1.0 - uMorph) * 2.6;',
+        '  vec3 basePos = mix(position, aScatter, uMorph);',
+        '  float cs = cos(swirl + aPhase * 0.15 * uMorph);',
+        '  float sn = sin(swirl + aPhase * 0.15 * uMorph);',
+        '  vec3 p = vec3(basePos.x * cs - basePos.z * sn, basePos.y + sin(uTime * 0.9 + aPhase) * (0.04 + 0.18 * uMorph), basePos.x * sn + basePos.z * cs);',
+        '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
+        '  float tw = 0.68 + 0.32 * sin(uTime * 2.6 + aPhase);',
+        '  vTwinkle = tw;',
+        '  gl_PointSize = aSize * uPixelRatio * (0.85 + 0.3 * tw) * (15.5 / max(1.0, -mv.z));',
+        '  gl_Position = projectionMatrix * mv;',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'varying vec3 vColor;',
+        'varying float vTwinkle;',
+        'void main() {',
+        '  float d = length(gl_PointCoord - vec2(0.5));',
+        '  if (d > 0.5) discard;',
+        '  // 克制通透：亮白细芯 + 彩色柔光，高饱和不泛白过曝',
+        '  float core = smoothstep(0.18, 0.0, d);',
+        '  float glow = pow(max(0.0, 1.0 - d * 2.0), 3.0);',
+        '  vec3 col = mix(vColor, vec3(1.0, 0.98, 0.99), core * 0.58);',
+        '  float alpha = clamp((glow * 0.52 + core * 0.42) * vTwinkle, 0.0, 0.85);',
+        '  gl_FragColor = vec4(col, alpha);',
+        '}'
+      ].join('\n'),
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+
+    var treePoints = new THREE.Points(treeGeo, treeMat);
+    worldGroup.add(treePoints);
+
+    /* ---------- 4.2 真实 3D 立体金属挂饰（78 颗亮面球 / 钻石八面体 / 小礼盒） ---------- */
+    var ornaments = [];
+    var orbGroup = new THREE.Group();
+    worldGroup.add(orbGroup);
+
+    var sphereGeo = new THREE.SphereGeometry(0.18, 20, 20);
+    var diamondGeo = new THREE.OctahedronGeometry(0.17, 0);
+    var boxGeo = new THREE.BoxGeometry(0.22, 0.22, 0.22);
+
+    var ORB_COUNT = 78;
+    for (var o = 0; o < ORB_COUNT; o++) {
+      var ou = 0.06 + (o / ORB_COUNT) * 0.87;
+      var oTiers = 7.0;
+      var oFrac = (ou * oTiers) % 1;
+      var oSkirt = 1.0 - oFrac * 0.4;
+      var oR = Math.pow(1.0 - ou, 0.86) * TREE_RADIUS * (0.68 + 0.42 * oSkirt);
+      var oAng = o * 2.39996 + (Math.random() - 0.5) * 0.25; // 黄金角均匀螺旋分布
+
+      var geoPick = o % 5 === 0 ? diamondGeo : (o % 7 === 0 ? boxGeo : sphereGeo);
+      var mat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0x331122,
+        emissiveIntensity: 0.45,
+        metalness: 0.82,
+        roughness: 0.16
+      });
+      var mesh = new THREE.Mesh(geoPick, mat);
+      var scale = 0.78 + Math.random() * 0.62;
+      mesh.scale.setScalar(scale);
+
+      var treePos = new THREE.Vector3(
+        Math.cos(oAng) * oR,
+        TREE_BOTTOM + ou * TREE_HEIGHT,
+        Math.sin(oAng) * oR
+      );
+      var scAng = Math.random() * Math.PI * 2;
+      var scR = 6.5 + Math.random() * 8.5;
+      var scatterPos = new THREE.Vector3(
+        Math.cos(scAng) * scR,
+        (Math.random() - 0.5) * 9.5,
+        Math.sin(scAng) * scR
+      );
+
+      mesh.position.copy(scatterPos);
+      orbGroup.add(mesh);
+      ornaments.push({
+        mesh: mesh,
+        treePos: treePos,
+        scatterPos: scatterPos,
+        colorIdx: o,
+        rotSpeed: (Math.random() - 0.5) * 1.4,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+
+    /* ---------- 4.3 树顶 3D 立体发光五角星 + 璀璨星芒 ---------- */
+    var starGroup = new THREE.Group();
+    starGroup.position.set(0, TREE_BOTTOM + TREE_HEIGHT + 0.52, 0);
+    worldGroup.add(starGroup);
+
+    var starShape = new THREE.Shape();
+    for (var st = 0; st < 10; st++) {
+      var sr = st % 2 === 0 ? 0.62 : 0.27;
+      var sa = (st * Math.PI) / 5 + Math.PI / 2;
+      var sx = Math.cos(sa) * sr;
+      var sy = Math.sin(sa) * sr;
+      if (st === 0) starShape.moveTo(sx, sy);
+      else starShape.lineTo(sx, sy);
+    }
+    starShape.closePath();
+
+    var starExtrudeGeo = new THREE.ExtrudeGeometry(starShape, {
+      depth: 0.14,
+      bevelEnabled: true,
+      bevelThickness: 0.06,
+      bevelSize: 0.05,
+      bevelSegments: 2
+    });
+    starExtrudeGeo.center();
+
+    var starCoreMat = new THREE.MeshBasicMaterial({
+      color: 0xfff5d6
+    });
+    var starMesh = new THREE.Mesh(starExtrudeGeo, starCoreMat);
+    starGroup.add(starMesh);
+
+    // 树顶星芒精灵光晕
+    function createStarFlareTexture() {
+      var c = document.createElement('canvas');
+      c.width = c.height = 256;
+      var ctx = c.getContext('2d');
+      ctx.translate(128, 128);
+      var rg = ctx.createRadialGradient(0, 0, 0, 0, 0, 120);
+      rg.addColorStop(0, 'rgba(255,255,255,0.95)');
+      rg.addColorStop(0.2, 'rgba(255,232,190,0.62)');
+      rg.addColorStop(0.55, 'rgba(255,190,210,0.16)');
+      rg.addColorStop(1, 'rgba(255,190,210,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath();
+      ctx.arc(0, 0, 120, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 纤细十字星芒
+      ctx.globalCompositeOperation = 'lighter';
+      for (var k = 0; k < 2; k++) {
+        ctx.save();
+        ctx.rotate(k * Math.PI / 2);
+        var lg = ctx.createLinearGradient(0, -124, 0, 124);
+        lg.addColorStop(0, 'rgba(255,255,255,0)');
+        lg.addColorStop(0.5, 'rgba(255,250,235,0.88)');
+        lg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = lg;
+        ctx.beginPath();
+        ctx.moveTo(-4, 0); ctx.lineTo(0, -124); ctx.lineTo(4, 0); ctx.lineTo(0, 124);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      return new THREE.CanvasTexture(c);
+    }
+
+    var flareSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: createStarFlareTexture(),
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    }));
+    flareSprite.scale.set(3.8, 3.8, 1);
+    starGroup.add(flareSprite);
+
+    /* ---------- 4.4 树底梦幻星光水波纹光环底座 ---------- */
+    var ringCount = 900;
+    var ringGeo = new THREE.BufferGeometry();
+    var ringPos = new Float32Array(ringCount * 3);
+    var ringCol = new Float32Array(ringCount * 3);
+    for (var rIdx = 0; rIdx < ringCount; rIdx++) {
+      var ringNum = (rIdx % 3) + 1;
+      var rad = ringNum * 1.75 + (Math.random() - 0.5) * 0.25;
+      var ra = Math.random() * Math.PI * 2;
+      ringPos[rIdx * 3] = Math.cos(ra) * rad;
+      ringPos[rIdx * 3 + 1] = TREE_BOTTOM - 0.35 + (Math.random() - 0.5) * 0.08;
+      ringPos[rIdx * 3 + 2] = Math.sin(ra) * rad;
+    }
+    ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
+    ringGeo.setAttribute('color', new THREE.BufferAttribute(ringCol, 3));
+    var ringMat = new THREE.PointsMaterial({
+      size: 0.13,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.62,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    var baseRings = new THREE.Points(ringGeo, ringMat);
+    worldGroup.add(baseRings);
+
+    /* ---------- 4.5 6 张 3D 悬浮拍立得祝福卡片（支持自定义照片 + 默认梦幻插画） ---------- */
+    var cardItems = [];
+    var cardGroup = new THREE.Group();
+    worldGroup.add(cardGroup);
+
+    var CARD_ICONS = ['✦', '❄', '♡', '☾', '✧', '❋'];
+    if (!Array.isArray(cfg.PHOTOS)) cfg.PHOTOS = [];
+
+    // 将用户上传的大图智能居中裁剪为 480x480 JPEG，单张仅 ~40KB，确保导出单文件发微信秒开
+    function compressPhotoFile(file, callback) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var img = new Image();
+        img.onload = function () {
+          var size = 480;
+          var c = document.createElement('canvas');
+          c.width = c.height = size;
+          var cx = c.getContext('2d');
+          var minSide = Math.min(img.width, img.height);
+          var sx = (img.width - minSide) / 2;
+          var sy = (img.height - minSide) / 2;
+          cx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+          callback(c.toDataURL('image/jpeg', 0.84));
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function drawPolaroidBase(ctx, text, index, theme) {
+      // 暖象牙拍立得相纸底框
+      ctx.fillStyle = '#fffaf6';
+      ctx.beginPath();
+      ctx.roundRect(12, 12, 488, 616, 22);
+      ctx.fill();
+
+      // 内框梦幻小画幅底色
+      var grd = ctx.createLinearGradient(36, 36, 476, 466);
+      grd.addColorStop(0, theme.cardTop);
+      grd.addColorStop(1, theme.cardMid);
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.roundRect(38, 38, 436, 424, 12);
+      ctx.fill();
+
+      // 拍立得下方留白区的祝福文字
+      ctx.fillStyle = '#2d1b2e';
+      ctx.font = '600 34px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      var showText = (text || 'Merry Christmas').slice(0, 14);
+      ctx.fillText(showText, 256, 535);
+
+      ctx.fillStyle = '#9f7f98';
+      ctx.font = '500 18px serif';
+      ctx.fillText('Dec 25 · Forever Sparkle', 256, 588);
+    }
+
+    function drawDefaultArtwork(ctx, index, theme) {
+      for (var s = 0; s < 42; s++) {
+        var sx = 54 + Math.random() * 404;
+        var sy = 54 + Math.random() * 392;
+        var sr = 1 + Math.random() * 2.5;
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.25 + Math.random() * 0.65) + ')';
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      var glow = ctx.createRadialGradient(256, 235, 10, 256, 235, 130);
+      glow.addColorStop(0, 'rgba(255,255,255,0.34)');
+      glow.addColorStop(0.5, theme.cardAccent + '44');
+      glow.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(256, 235, 130, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(256, 235, 86, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#fffaf0';
+      ctx.font = '600 84px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(CARD_ICONS[index % CARD_ICONS.length], 256, 238);
+
+      ctx.fillStyle = 'rgba(255,240,248,0.72)';
+      ctx.font = '500 22px "PingFang SC", sans-serif';
+      ctx.fillText('CHRISTMAS WISH · 0' + (index + 1), 256, 422);
+    }
+
+    function createPolaroidTexture(text, index, theme, photoDataUrl) {
+      var c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 640;
+      var ctx = c.getContext('2d');
+
+      drawPolaroidBase(ctx, text, index, theme);
+      if (!photoDataUrl) {
+        drawDefaultArtwork(ctx, index, theme);
+      }
+
+      var tex = new THREE.CanvasTexture(c);
+      tex.anisotropy = 4;
+
+      if (photoDataUrl) {
+        var img = new Image();
+        img.onload = function () {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(38, 38, 436, 424, 12);
+          ctx.clip();
+          // 居中 cover 绘制照片不变形
+          var boxW = 436, boxH = 424;
+          var scale = Math.max(boxW / img.width, boxH / img.height);
+          var dw = img.width * scale;
+          var dh = img.height * scale;
+          ctx.drawImage(img, 38 + (boxW - dw) / 2, 38 + (boxH - dh) / 2, dw, dh);
+          // 轻微复古拍立得内边框柔暗角
+          var vig = ctx.createRadialGradient(256, 250, 120, 256, 250, 280);
+          vig.addColorStop(0, 'rgba(0,0,0,0)');
+          vig.addColorStop(1, 'rgba(20,10,24,0.22)');
+          ctx.fillStyle = vig;
+          ctx.fillRect(38, 38, boxW, boxH);
+          ctx.restore();
+          tex.needsUpdate = true;
+        };
+        img.src = photoDataUrl;
+      }
+
+      return tex;
+    }
+
+    function buildPolaroidCards() {
+      while (cardGroup.children.length) {
+        var old = cardGroup.children[0];
+        if (old.material && old.material.map) old.material.map.dispose();
+        if (old.material) old.material.dispose();
+        if (old.geometry) old.geometry.dispose();
+        cardGroup.remove(old);
+      }
+      cardItems.length = 0;
+
+      var theme = THEMES[activeThemeKey];
+      var list = (cfg.CARDS && cfg.CARDS.length) ? cfg.CARDS.slice(0, 6) : ['Merry Christmas'];
+      while (list.length < 6) list.push('Merry Christmas');
+      var cardGeo = new THREE.PlaneGeometry(1.52, 1.9);
+
+      for (var cIdx = 0; cIdx < list.length; cIdx++) {
+        var angle = (cIdx / list.length) * Math.PI * 2 + 0.52;
+        var heightRatio = 0.28 + (cIdx % 3) * 0.23;
+        var radius = Math.pow(1 - heightRatio, 0.78) * TREE_RADIUS + 2.05;
+        var photoUrl = (cfg.PHOTOS && cfg.PHOTOS[cIdx]) || '';
+
+        var tex = createPolaroidTexture(list[cIdx], cIdx, theme, photoUrl);
+        var mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.98
+        });
+        var mesh = new THREE.Mesh(cardGeo, mat);
+        mesh.userData = { cardIndex: cIdx, caption: list[cIdx], photoUrl: photoUrl };
+
+        var treePos = new THREE.Vector3(
+          Math.cos(angle) * radius,
+          TREE_BOTTOM + heightRatio * TREE_HEIGHT + 0.35,
+          Math.sin(angle) * radius
+        );
+        var scatterAngle = (cIdx / list.length) * Math.PI * 2;
+        var scatterPos = new THREE.Vector3(
+          Math.cos(scatterAngle) * 5.8,
+          ((cIdx % 2 === 0) ? 1.4 : -1.1) + Math.sin(cIdx) * 0.9,
+          Math.sin(scatterAngle) * 5.8
+        );
+
+        mesh.position.copy(scatterPos);
+        cardGroup.add(mesh);
+        cardItems.push({
+          mesh: mesh,
+          treePos: treePos,
+          scatterPos: scatterPos,
+          tiltZ: (cIdx % 2 === 0 ? 1 : -1) * (0.08 + (cIdx % 3) * 0.04),
+          phase: cIdx * 1.15
+        });
+      }
+    }
+
+    /* ---------- 4.6 漫天 3D 飘雪与远景星海 ---------- */
+    var SNOW_COUNT = 520;
+    var snowGeo = new THREE.BufferGeometry();
+    var snowPos = new Float32Array(SNOW_COUNT * 3);
+    var snowSpeed = new Float32Array(SNOW_COUNT);
+    for (var sn = 0; sn < SNOW_COUNT; sn++) {
+      snowPos[sn * 3] = (Math.random() - 0.5) * 38;
+      snowPos[sn * 3 + 1] = (Math.random() - 0.5) * 28;
+      snowPos[sn * 3 + 2] = (Math.random() - 0.5) * 32;
+      snowSpeed[sn] = 0.6 + Math.random() * 1.4;
+    }
+    snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+
+    function makeSoftDotTexture() {
+      var c = document.createElement('canvas');
+      c.width = c.height = 64;
+      var ctx = c.getContext('2d');
+      var g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(255,255,255,0.95)');
+      g.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    }
+
+    var snowMat = new THREE.PointsMaterial({
+      size: 0.24,
+      map: makeSoftDotTexture(),
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.72,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    var snowPoints = new THREE.Points(snowGeo, snowMat);
+    scene.add(snowPoints);
+
+    /* ---------- 4.7 点击屏幕绽放的 3D 星尘火花 ---------- */
+    var sparks = [];
+    var sparkGeo = new THREE.BufferGeometry();
+    var MAX_SPARKS = 260;
+    var spPos = new Float32Array(MAX_SPARKS * 3);
+    var spCol = new Float32Array(MAX_SPARKS * 3);
+    sparkGeo.setAttribute('position', new THREE.BufferAttribute(spPos, 3));
+    sparkGeo.setAttribute('color', new THREE.BufferAttribute(spCol, 3));
+    var sparkMat = new THREE.PointsMaterial({
+      size: 0.28,
+      map: makeSoftDotTexture(),
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    var sparkPoints = new THREE.Points(sparkGeo, sparkMat);
+    scene.add(sparkPoints);
+
+    function spawnSparks(ndcX, ndcY) {
+      var vec = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(camera);
+      var dir = vec.sub(camera.position).normalize();
+      var origin = camera.position.clone().add(dir.multiplyScalar(11.5));
+      var palette = THEMES[activeThemeKey].ornaments;
+      for (var k = 0; k < 28; k++) {
+        var theta = Math.random() * Math.PI * 2;
+        var phi = Math.acos(2 * Math.random() - 1);
+        var spd = 1.6 + Math.random() * 3.8;
+        var c = new THREE.Color(palette[k % palette.length]);
+        sparks.push({
+          x: origin.x, y: origin.y, z: origin.z,
+          vx: Math.sin(phi) * Math.cos(theta) * spd,
+          vy: Math.cos(phi) * spd + 0.8,
+          vz: Math.sin(phi) * Math.sin(theta) * spd,
+          r: c.r, g: c.g, b: c.b,
+          life: 1.0
+        });
+      }
+      if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
+    }
+
+    /* ---------- 4.8 应用主题配色（整棵树 + 挂饰 + 星环 + 卡片同步变色） ---------- */
+    function applyTheme(themeKey) {
+      if (!THEMES[themeKey]) return;
+      activeThemeKey = themeKey;
+      cfg.THEME = themeKey;
+      var t = THEMES[themeKey];
+
+      wrap.style.background = t.bgCss;
+      scene.fog.color.setHex(t.fogColor);
+      keyLight.color.setHex(t.light1);
+      rimLight.color.setHex(t.light2);
+      starPointLight.color.setHex(t.starColor);
+      starCoreMat.color.setHex(t.starColor);
+
+      // 更新 7,500 颗主树粒子颜色
+      var colorAttr = treeGeo.getAttribute('aColor');
+      var tmpColor = new THREE.Color();
+      for (var i = 0; i < PARTICLE_COUNT; i++) {
+        var role = pRoles[i];
+        var arr = role === 0 ? t.treeInner : (role === 1 ? t.treeMid : (role === 2 ? t.treeTip : t.ribbon));
+        tmpColor.setHex(arr[i % arr.length]);
+        colorAttr.setXYZ(i, tmpColor.r, tmpColor.g, tmpColor.b);
+      }
+      colorAttr.needsUpdate = true;
+
+      // 更新 78 颗 3D 挂饰颜色
+      for (var o = 0; o < ornaments.length; o++) {
+        var hex = t.ornaments[o % t.ornaments.length];
+        ornaments[o].mesh.material.color.setHex(hex);
+        ornaments[o].mesh.material.emissive.setHex(hex);
+      }
+
+      // 更新树底星环颜色
+      var ringColorAttr = ringGeo.getAttribute('color');
+      for (var r = 0; r < ringCount; r++) {
+        tmpColor.setHex(t.ribbon[r % t.ribbon.length]);
+        ringColorAttr.setXYZ(r, tmpColor.r, tmpColor.g, tmpColor.b);
+      }
+      ringColorAttr.needsUpdate = true;
+
+      // 同步重绘拍立得卡片配色
+      buildPolaroidCards();
+
+      // 高亮当前圆点
+      document.querySelectorAll('.theme-dot').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-theme') === themeKey);
+      });
+    }
+
+    function syncTextUI() {
+      var name = cfg.NAME || '你';
+      document.title = '致 ' + name + ' · 梦幻星河圣诞树';
+      document.getElementById('introName').textContent = '致 ' + name;
+      document.getElementById('bottomTitle').textContent = name + ' · Merry Christmas';
+      document.getElementById('bottomBlessing').textContent = cfg.BLESSING || '';
+      if (cfg.GIFT_MODE) {
+        document.body.classList.add('gift-mode');
+      } else {
+        document.body.classList.remove('gift-mode');
+      }
+    }
+
+    syncTextUI();
+    applyTheme(activeThemeKey);
+
+    /* ---------- 4.9 交互状态与魔法切换 ---------- */
+    var opened = false;
+    var targetMorph = 1.0; // 开屏先展示星云海，点击后聚合成树
+    var currentMorph = 1.0;
+    var rotY = 0;
+    var rotVel = 0;
+    var tiltX = 0.08;
+    var dragging = false, lastX = 0, lastY = 0, movedDist = 0, lastTapTime = 0, pinchStartDist = 0;
+
+    function toggleMorph() {
+      targetMorph = targetMorph < 0.5 ? 1.0 : 0.0;
+      morphBtn.textContent = targetMorph > 0.5 ? '✦ 聚合成圣诞树' : '✦ 散成梦幻星河';
+      playMagicChime();
+    }
+
+    function unwrapSurprise() {
+      if (opened) return;
+      opened = true;
+      introEl.classList.add('hidden');
+      topbarEl.classList.add('show');
+      hudBottomEl.classList.add('show');
+      tipEl.classList.add('show');
+      setTimeout(function () { tipEl.classList.remove('show'); }, 6500);
+
+      targetMorph = 0.0;
+      morphBtn.textContent = '✦ 散成梦幻星河';
+      startMusic();
+      playMagicChime();
+    }
+
+    document.getElementById('unwrapBtn').addEventListener('click', unwrapSurprise);
+    introEl.addEventListener('click', function (e) {
+      if (e.target === introEl) unwrapSurprise();
+    });
+    morphBtn.addEventListener('click', toggleMorph);
+
+    document.querySelectorAll('.theme-dot').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyTheme(btn.getAttribute('data-theme'));
+        playMagicChime();
+      });
+    });
+
+    // 静音开关
+    var muteBtn = document.getElementById('muteBtn');
+    var icoOn = document.getElementById('icoSoundOn');
+    var icoOff = document.getElementById('icoSoundOff');
+    muteBtn.addEventListener('click', function () {
+      isMuted = !isMuted;
+      icoOn.style.display = isMuted ? 'none' : 'block';
+      icoOff.style.display = isMuted ? 'block' : 'none';
+      if (masterGain && audioCtx) {
+        masterGain.gain.setTargetAtTime(isMuted ? 0.0001 : 0.82, audioCtx.currentTime, 0.06);
+      }
+    });
+
+    // 自定义照片上传 + 改名与导出专属 HTML
+    var editorModal = document.getElementById('editor-modal');
+    var inputName = document.getElementById('inputName');
+    var inputBlessing = document.getElementById('inputBlessing');
+    var inputCards = document.getElementById('inputCards');
+    var photoGridEl = document.getElementById('photoGrid');
+    var photoMultiInput = document.getElementById('photoMultiInput');
+    var photoSingleInput = document.getElementById('photoSingleInput');
+    var replacingSlotIdx = -1;
+
+    function renderPhotoGrid() {
+      if (!photoGridEl) return;
+      photoGridEl.innerHTML = '';
+      for (var pIdx = 0; pIdx < 6; pIdx++) {
+        (function (slotIdx) {
+          var url = (cfg.PHOTOS && cfg.PHOTOS[slotIdx]) || '';
+          var div = document.createElement('div');
+          div.className = 'photo-slot';
+          div.title = url ? '点击替换照片' : '点击上传第 ' + (slotIdx + 1) + ' 张照片';
+          if (url) {
+            var img = document.createElement('img');
+            img.src = url;
+            div.appendChild(img);
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'remove-photo';
+            del.textContent = '×';
+            del.title = '移除照片，恢复默认插画';
+            del.addEventListener('click', function (e) {
+              e.stopPropagation();
+              cfg.PHOTOS[slotIdx] = '';
+              renderPhotoGrid();
+              buildPolaroidCards();
+            });
+            div.appendChild(del);
+          } else {
+            div.innerHTML = '<span style="font-size:18px;line-height:1">+</span><span style="margin-top:4px">照片 0' + (slotIdx + 1) + '</span>';
+          }
+          div.addEventListener('click', function () {
+            replacingSlotIdx = slotIdx;
+            photoSingleInput.value = '';
+            photoSingleInput.click();
+          });
+          photoGridEl.appendChild(div);
+        })(pIdx);
+      }
+    }
+
+    function handleMultiplePhotos(files) {
+      if (!files || !files.length) return;
+      var list = Array.prototype.slice.call(files, 0, 6);
+      var remaining = list.length;
+      if (!Array.isArray(cfg.PHOTOS)) cfg.PHOTOS = [];
+      // 优先填补空槽位；如果已满则从第 1 张起依次覆盖
+      var startEmpty = 0;
+      list.forEach(function (file, offset) {
+        var targetIdx = -1;
+        for (var k = startEmpty; k < 6; k++) {
+          if (!cfg.PHOTOS[k]) { targetIdx = k; startEmpty = k + 1; break; }
+        }
+        if (targetIdx === -1) targetIdx = offset % 6;
+        compressPhotoFile(file, function (dataUrl) {
+          cfg.PHOTOS[targetIdx] = dataUrl;
+          remaining--;
+          if (remaining <= 0) {
+            renderPhotoGrid();
+            buildPolaroidCards();
+            playMagicChime();
+          }
+        });
+      });
+    }
+
+    document.getElementById('modalUploadAllBtn').addEventListener('click', function () {
+      photoMultiInput.value = '';
+      photoMultiInput.click();
+    });
+    photoMultiInput.addEventListener('change', function (e) {
+      handleMultiplePhotos(e.target.files);
+    });
+    photoSingleInput.addEventListener('change', function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file || replacingSlotIdx < 0) return;
+      var idx = replacingSlotIdx;
+      compressPhotoFile(file, function (dataUrl) {
+        if (!Array.isArray(cfg.PHOTOS)) cfg.PHOTOS = [];
+        cfg.PHOTOS[idx] = dataUrl;
+        renderPhotoGrid();
+        buildPolaroidCards();
+        playMagicChime();
+      });
+    });
+
+    function openEditorModal() {
+      inputName.value = cfg.NAME || '';
+      inputBlessing.value = cfg.BLESSING || '';
+      inputCards.value = (cfg.CARDS || []).join('\n');
+      renderPhotoGrid();
+      editorModal.classList.add('open');
+    }
+
+    document.getElementById('editBtn').addEventListener('click', openEditorModal);
+    document.getElementById('closeEditor').addEventListener('click', function () {
+      editorModal.classList.remove('open');
+    });
+
+    function saveEditorToConfig() {
+      var newName = inputName.value.trim() || '小美';
+      var newBlessing = inputBlessing.value.trim();
+      var newCards = inputCards.value
+        .split('\n')
+        .map(function (s) { return s.trim(); })
+        .filter(Boolean);
+      cfg.NAME = newName;
+      cfg.BLESSING = newBlessing;
+      if (newCards.length) cfg.CARDS = newCards.slice(0, 6);
+      syncTextUI();
+      buildPolaroidCards();
+    }
+
+    document.getElementById('applyBtn').addEventListener('click', function () {
+      saveEditorToConfig();
+      editorModal.classList.remove('open');
+      playMagicChime();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', function () {
+      saveEditorToConfig();
+      var exportCfg = Object.assign({}, cfg, { GIFT_MODE: true });
+      var clone = document.documentElement.cloneNode(true);
+      var cfgScript = clone.querySelector('#christmas-config');
+      if (cfgScript) {
+        cfgScript.textContent = '\nwindow.XMAS_CONFIG = ' + JSON.stringify(exportCfg, null, 2) + ';\n';
+      }
+      var bodyClone = clone.querySelector('body');
+      if (bodyClone) bodyClone.className = 'gift-mode';
+      var wrapClone = clone.querySelector('#canvas-wrap');
+      if (wrapClone) { wrapClone.innerHTML = ''; wrapClone.removeAttribute('style'); }
+      var introClone = clone.querySelector('#intro');
+      if (introClone) introClone.className = '';
+      var topClone = clone.querySelector('#topbar');
+      if (topClone) topClone.className = '';
+      var hudClone = clone.querySelector('#hud-bottom');
+      if (hudClone) hudClone.className = '';
+      var loaderClone = clone.querySelector('#loader');
+      if (loaderClone) loaderClone.className = '';
+      var modalClone = clone.querySelector('#editor-modal');
+      if (modalClone) modalClone.className = '';
+      var lbClone = clone.querySelector('#photo-lightbox');
+      if (lbClone) lbClone.className = '';
+      clone.querySelectorAll('head script[src*="three"]').forEach(function (s) { s.remove(); });
+
+      var htmlDoc = '<!DOCTYPE html>\n' + clone.outerHTML;
+      var blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = '致' + cfg.NAME + '的梦幻圣诞树.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      editorModal.classList.remove('open');
+    });
+
+    // 拍立得高清灯箱
+    var lightboxEl = document.getElementById('photo-lightbox');
+    var lightboxImgBox = document.getElementById('lightboxImgBox');
+    var lightboxCaption = document.getElementById('lightboxCaption');
+    lightboxEl.addEventListener('click', function (e) {
+      if (e.target === lightboxEl) lightboxEl.classList.remove('open');
+    });
+
+    function openCardLightbox(cardMesh) {
+      var data = cardMesh.userData || {};
+      lightboxCaption.textContent = data.caption || 'Merry Christmas';
+      lightboxImgBox.innerHTML = '';
+      if (data.photoUrl) {
+        var im = document.createElement('img');
+        im.src = data.photoUrl;
+        lightboxImgBox.appendChild(im);
+      } else {
+        var t = THEMES[activeThemeKey];
+        lightboxImgBox.style.background = 'linear-gradient(145deg,' + t.cardTop + ',' + t.cardMid + ')';
+        lightboxImgBox.innerHTML = '<div style="font-size:64px;color:#fffaf0">' + CARD_ICONS[(data.cardIndex || 0) % CARD_ICONS.length] + '</div>';
+      }
+      lightboxEl.classList.add('open');
+      playMagicChime();
+    }
+
+    // 鼠标 & 触控旋转 / 缩放 / 点拍立得看大图 / 双击切换星河 / 单击星尘
+    var dom = renderer.domElement;
+    var raycaster = new THREE.Raycaster();
+    var pointerNdc = new THREE.Vector2();
+
+    function onPointerDown(x, y) {
+      if (!opened) return;
+      dragging = true;
+      lastX = x;
+      lastY = y;
+      movedDist = 0;
+    }
+    function onPointerMove(x, y) {
+      if (!dragging) return;
+      var dx = x - lastX;
+      var dy = y - lastY;
+      lastX = x;
+      lastY = y;
+      movedDist += Math.abs(dx) + Math.abs(dy);
+      rotY += dx * 0.0075;
+      rotVel = dx * 0.0075 * 4.2;
+      tiltX = Math.max(-0.28, Math.min(0.45, tiltX + dy * 0.0032));
+    }
+    function onPointerUp(x, y) {
+      if (!dragging) return;
+      dragging = false;
+      if (movedDist < 12 && opened) {
+        var now = Date.now();
+        if (now - lastTapTime < 320) {
+          toggleMorph();
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+
+        // 优先检测是否点击了 3D 拍立得卡片
+        pointerNdc.set((x / W) * 2 - 1, -(y / H) * 2 + 1);
+        raycaster.setFromCamera(pointerNdc, camera);
+        var hits = raycaster.intersectObjects(cardGroup.children, false);
+        if (hits.length > 0) {
+          openCardLightbox(hits[0].object);
+          return;
+        }
+
+        spawnSparks(pointerNdc.x, pointerNdc.y);
+        if (audioCtx && !isMuted) {
+          var notes = ['G5', 'B5', 'C6', 'E6'];
+          playBell(NOTE_FREQ[notes[(Math.random() * notes.length) | 0]], audioCtx.currentTime + 0.01, 0.45, 0.4);
+        }
+      }
+    }
+
+    dom.addEventListener('mousedown', function (e) { onPointerDown(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function (e) { onPointerMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', function (e) { onPointerUp(e.clientX, e.clientY); });
+    dom.addEventListener('wheel', function (e) {
+      if (!opened) return;
+      targetCamDist = Math.max(10.5, Math.min(30, targetCamDist + e.deltaY * 0.012));
+    }, { passive: true });
+
+    dom.addEventListener('touchstart', function (e) {
+      if (!opened) return;
+      if (e.touches.length === 2) {
+        dragging = false;
+        var dx = e.touches[0].clientX - e.touches[1].clientX;
+        var dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchStartDist = Math.hypot(dx, dy);
+      } else if (e.touches.length === 1) {
+        onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    dom.addEventListener('touchmove', function (e) {
+      if (!opened) return;
+      if (e.touches.length === 2 && pinchStartDist > 0) {
+        var dx = e.touches[0].clientX - e.touches[1].clientX;
+        var dy = e.touches[0].clientY - e.touches[1].clientY;
+        var dist = Math.hypot(dx, dy);
+        targetCamDist = Math.max(10.5, Math.min(30, targetCamDist + (pinchStartDist - dist) * 0.04));
+        pinchStartDist = dist;
+      } else if (e.touches.length === 1) {
+        onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    dom.addEventListener('touchend', function (e) {
+      if (e.changedTouches.length === 1) {
+        onPointerUp(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+      if (e.touches.length < 2) pinchStartDist = 0;
+    }, { passive: true });
+
+    window.addEventListener('resize', function () {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      camera.aspect = W / H;
+      camera.updateProjectionMatrix();
+      renderer.setSize(W, H);
+      treeMat.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 2);
+    });
+
+    /* ---------- 4.10 60fps 主渲染循环 ---------- */
+    var clock = new THREE.Clock();
+    var tmpVec = new THREE.Vector3();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      var dt = Math.min(clock.getDelta(), 0.05);
+      var t = clock.getElapsedTime();
+
+      // 丝滑星河聚散插值（约 1.8~2.2 秒利落成型）
+      currentMorph += (targetMorph - currentMorph) * Math.min(1, dt * 4.6);
+      treeMat.uniforms.uTime.value = t;
+      treeMat.uniforms.uMorph.value = currentMorph;
+
+      // 自动优雅慢转 + 惯性阻尼
+      rotY += (0.22 + rotVel) * dt;
+      rotVel *= Math.pow(0.92, dt * 60);
+      if (!dragging) tiltX += (0.08 - tiltX) * Math.min(1, dt * 2.2);
+
+      worldGroup.rotation.y = rotY;
+      worldGroup.rotation.x = tiltX;
+
+      camDist += (targetCamDist - camDist) * Math.min(1, dt * 5.0);
+      camera.position.z = camDist;
+      camera.lookAt(0, 0.3, 0);
+
+      // 更新 78 颗 3D 挂饰位置与闪耀旋转
+      for (var o = 0; o < ornaments.length; o++) {
+        var ob = ornaments[o];
+        ob.mesh.position.lerpVectors(ob.treePos, ob.scatterPos, currentMorph);
+        ob.mesh.position.y += Math.sin(t * 1.4 + ob.phase) * 0.06;
+        ob.mesh.rotation.y += ob.rotSpeed * dt;
+        ob.mesh.rotation.x += ob.rotSpeed * 0.6 * dt;
+      }
+
+      // 更新树顶星芒（散开时淡出缩小，成树时闪耀旋转）
+      var starScale = Math.max(0.001, (1.0 - currentMorph * 0.92) * (0.94 + 0.09 * Math.sin(t * 2.8)));
+      starGroup.scale.setScalar(starScale);
+      starGroup.rotation.y = t * 0.9;
+      flareSprite.material.rotation = Math.sin(t * 0.5) * 0.25;
+
+      // 更新树底星环
+      baseRings.rotation.y = -t * 0.28;
+      ringMat.opacity = Math.max(0.05, (1.0 - currentMorph) * 0.62);
+
+      // 更新 6 张 3D 拍立得祝福卡片（始终温柔面向镜头微晃）
+      for (var c = 0; c < cardItems.length; c++) {
+        var card = cardItems[c];
+        card.mesh.position.lerpVectors(card.treePos, card.scatterPos, currentMorph);
+        card.mesh.position.y += Math.sin(t * 1.2 + card.phase) * 0.14;
+        // 卡片略微朝向相机，同时保留优雅倾斜角
+        card.mesh.lookAt(camera.position);
+        card.mesh.rotateZ(card.tiltZ + Math.sin(t * 0.9 + card.phase) * 0.03);
+        var cScale = 0.88 + currentMorph * 0.34;
+        card.mesh.scale.setScalar(cScale);
+      }
+
+      // 飘雪下落
+      var sArr = snowGeo.getAttribute('position').array;
+      for (var sn = 0; sn < SNOW_COUNT; sn++) {
+        var idx3 = sn * 3;
+        sArr[idx3 + 1] -= snowSpeed[sn] * dt;
+        sArr[idx3] += Math.sin(t * 0.6 + sn) * 0.22 * dt;
+        if (sArr[idx3 + 1] < -14) {
+          sArr[idx3 + 1] = 14;
+          sArr[idx3] = (Math.random() - 0.5) * 38;
+        }
+      }
+      snowGeo.getAttribute('position').needsUpdate = true;
+
+      // 点击星尘火花更新
+      var spP = sparkGeo.getAttribute('position').array;
+      var spC = sparkGeo.getAttribute('color').array;
+      for (var sp = sparks.length - 1; sp >= 0; sp--) {
+        var pt = sparks[sp];
+        pt.life -= dt * 1.15;
+        if (pt.life <= 0) {
+          sparks.splice(sp, 1);
+          continue;
+        }
+        pt.vy -= 2.2 * dt;
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.z += pt.vz * dt;
+      }
+      for (var si = 0; si < MAX_SPARKS; si++) {
+        var s3 = si * 3;
+        if (si < sparks.length) {
+          var item = sparks[si];
+          spP[s3] = item.x; spP[s3 + 1] = item.y; spP[s3 + 2] = item.z;
+          spC[s3] = item.r * item.life;
+          spC[s3 + 1] = item.g * item.life;
+          spC[s3 + 2] = item.b * item.life;
+        } else {
+          spP[s3] = 0; spP[s3 + 1] = -999; spP[s3 + 2] = 0;
+        }
+      }
+      sparkGeo.getAttribute('position').needsUpdate = true;
+      sparkGeo.getAttribute('color').needsUpdate = true;
+
+      renderer.render(scene, camera);
+    }
+
+    loaderEl.classList.add('done');
+    animate();
+  }
+
+  loadThree(0, startApp);
+})();
+</script>
+</body>
+</html>
